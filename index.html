@@ -11,15 +11,67 @@
       integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
       crossorigin="anonymous"
     />
+
+    <style>
+      .col-2 img {
+        height: 120px;
+      }
+    </style>
   </head>
   <body>
-    <div class="container my-3">
-      <div class="row"></div>
+    <div class="container my-5">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="input-group">
+            <input id="txtSearch" type="text" class="form-control" />
+            <button id="btnSearch" type="button" class="btn btn-primary">
+              Yükle
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-3" id="country-details">
+        <!-- <div class="card-header">Arama Sonucu</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-4">
+              <img src="" alt="" class="img-fluid" />
+            </div>
+            <div class="col-8">
+              <h3 class="card-title">Türkiye</h3>
+              <hr />
+              <div class="row">
+                <div class="col-4">Nüfus:</div>
+                <div class="col-8">84.5 milyon</div>
+              </div>
+
+              <div class="row">
+                <div class="col-4">Resmi Dil:</div>
+                <div class="col-8">Türkçe</div>
+              </div>
+
+              <div class="row">
+                <div class="col-4">Başkent:</div>
+                <div class="col-8">Ankara</div>
+              </div>
+            </div>
+          </div>
+        </div> -->
+      </div>
+      <div class="card mb-3">
+        <div class="card-header">Komşu Ülkeler</div>
+        <div class="card-body">
+          <div class="row" id="neighbors"></div>
+        </div>
+      </div>
     </div>
     <script>
-      // XML , JSON
+      document.querySelector("#btnSearch").addEventListener("click", () => {
+        let text = document.querySelector("#txtSearch").value;
+        getCountry(text);
+      });
 
-      function displayCountry(country) {
+      function getCountry(country) {
         const request = new XMLHttpRequest();
         request.open("GET", "https://restcountries.com/v3.1/name/" + country);
         request.send();
@@ -30,42 +82,85 @@
           // string to JSON
           const data = JSON.parse(this.responseText);
           console.log(data);
-          setCountry(data[0]);
+          renderCountry(data[0]);
+
+          const countries = data[0].borders.toString();
+
+          //load neighbors
+          const req = new XMLHttpRequest();
+          req.open(
+            "GET",
+            "https://restcountries.com/v3.1/alpha?codes=" + countries
+          );
+          req.send();
+
+          req.addEventListener("load", function () {
+            const data = JSON.parse(this.responseText);
+            renderNeighbors(data);
+          });
         });
       }
 
-      function setCountry(data) {
-        const html = `
-        <div class="col-3">
-          <div class="card h-100">
-            <img src="${data.flags.png}" class="card-img-top">
-            <div class="card-body">
-              <h5 class="card-title">${data.name.common}</h5>
+      function renderCountry(data) {
+        let html = `
+        <div class="card-header">Arama Sonucu</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-4">
+              <img src="${data.flags.png}" alt="" class="img-fluid" />
             </div>
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item">Population: ${(
-                data.population / 1000000
-              ).toFixed(1)} </li>
+            <div class="col-8">
+              <h3 class="card-title">${data.name.common}</h3>
+              <hr />
+              <div class="row">
+                <div class="col-4">Nüfus:</div>
+                <div class="col-8">${(data.population / 1000000).toFixed(
+                  1
+                )} milyon</div>
+              </div>
 
-              <li class="list-group-item">Capital: ${data.capital[0]} </li>
+              <div class="row">
+                <div class="col-4">Resmi Dil:</div>
+                <div class="col-8">${Object.values(data.languages)}</div>
+              </div>
 
-              <li class="list-group-item">Languages: ${Object.values(
-                data.languages
-              )}</li>
+              <div class="row">
+                <div class="col-4">Başkent:</div>
+                <div class="col-8">${data.capital[0]}</div>
+              </div>
 
-
-            </ul>
+              <div class="row">
+                <div class="col-4">Para Birimi:</div>
+                <div class="col-8">${Object.values(data.currencies)[0].name} 
+                  (${Object.values(data.currencies)[0].symbol})
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        `;
+        </div>`;
 
-        document
-          .querySelector(".container .row")
-          .insertAdjacentHTML("beforeend", html);
+        document.querySelector("#country-details").innerHTML = html;
       }
 
-      displayCountry("italy");
-      displayCountry("turkey");
+      function renderNeighbors(data) {
+        let html = "";
+        for (let country of data) {
+          html += `
+          <div class="col-2 mt-2">
+            <div class="card">
+              <img src="${country.flags.png}" class="card-img-top">
+              <div class="card-body">
+                <h6 class="card-title">${country.name.common}</h6>
+              </div>
+
+            </div>
+
+          </div>
+          
+          `;
+        }
+        document.querySelector("#neighbors").innerHTML = html;
+      }
     </script>
   </body>
 </html>
