@@ -16,10 +16,15 @@
       .col-2 img {
         height: 120px;
       }
+
+      #details {
+        opacity: 0;
+      }
     </style>
   </head>
   <body>
     <div class="container my-5">
+      <div id="errors"></div>
       <div class="card mb-3">
         <div class="card-body">
           <div class="input-group">
@@ -30,36 +35,54 @@
           </div>
         </div>
       </div>
-      <div class="card mb-3" id="country-details"></div>
-      <div class="card mb-3">
-        <div class="card-header">Komşu Ülkeler</div>
-        <div class="card-body">
-          <div class="row" id="neighbors"></div>
+
+      <div id="details">
+        <div class="card mb-3">
+          <div class="card-header">Arama Sonucu</div>
+          <div class="card-body">
+            <div class="row" id="country-details"></div>
+          </div>
+        </div>
+        <div class="card mb-3">
+          <div class="card-header">Komşu Ülkeler</div>
+          <div class="card-body">
+            <div class="row" id="neighbors"></div>
+          </div>
         </div>
       </div>
     </div>
     <script>
       document.querySelector("#btnSearch").addEventListener("click", () => {
         let text = document.querySelector("#txtSearch").value;
+        document.querySelector("#details").style.opacity = 0;
         getCountry(text);
       });
 
       function getCountry(country) {
         fetch("https://restcountries.com/v3.1/name/" + country)
-          .then((response) => response.json())
+          .then((response) => {
+            if (!response.ok) throw new Error("ülke bulunamadı");
+            return response.json();
+          })
           .then((data) => {
             renderCountry(data[0]);
-            const countries = data[0].borders.toString();
+            const countries = data[0].borders;
+
+            if (!countries) throw new Error("komşu ülke bulunamadı");
 
             return fetch(
-              "https://restcountries.com/v3.1/alpha?codes=" + countries
+              "https://restcountries.com/v3.1/alpha?codes=" +
+                countries.toString()
             );
           })
           .then((response) => response.json())
-          .then((data) => renderNeighbors(data));
+          .then((data) => renderNeighbors(data))
+          .catch((err) => renderError(err));
       }
 
       function renderCountry(data) {
+        document.querySelector("#country-details").innerHTML = "";
+        document.querySelector("#neighbors").innerHTML = "";
         let html = `
         <div class="card-header">Arama Sonucu</div>
         <div class="card-body">
@@ -97,6 +120,7 @@
           </div>
         </div>`;
 
+        document.querySelector("#details").style.opacity = 1;
         document.querySelector("#country-details").innerHTML = html;
       }
 
@@ -118,6 +142,16 @@
           `;
         }
         document.querySelector("#neighbors").innerHTML = html;
+      }
+
+      function renderError(err) {
+        const html = `
+        <div class="alert alert-danger">${err.message}</div>
+        `;
+        setTimeout(function () {
+          document.querySelector("#errors").innerHTML = "";
+        }, 3000);
+        document.querySelector("#errors").innerHTML = html;
       }
     </script>
   </body>
