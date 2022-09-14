@@ -11,6 +11,13 @@
       integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
       crossorigin="anonymous"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+      integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
 
     <style>
       .col-2 img {
@@ -19,6 +26,10 @@
 
       #details {
         opacity: 0;
+      }
+
+      #loading {
+        display: none;
       }
     </style>
   </head>
@@ -32,8 +43,15 @@
             <button id="btnSearch" type="button" class="btn btn-primary">
               Yükle
             </button>
+            <button id="btnLocation" type="button" class="btn btn-danger">
+              <i class="fa-solid fa-location-crosshairs"></i>
+            </button>
           </div>
         </div>
+      </div>
+
+      <div id="loading" class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
 
       <div id="details">
@@ -55,8 +73,39 @@
       document.querySelector("#btnSearch").addEventListener("click", () => {
         let text = document.querySelector("#txtSearch").value;
         document.querySelector("#details").style.opacity = 0;
+        document.querySelector("#loading").style.display = "block";
         getCountry(text);
       });
+
+      document.querySelector("#btnLocation").addEventListener("click", () => {
+        if (navigator.geolocation) {
+          document.querySelector("#loading").style.display = "block";
+          navigator.geolocation.getCurrentPosition(onSuccess, onError);
+        }
+      });
+
+      async function onSuccess(position) {
+        let lat = position.coords.latitude;
+        let lng = position.coords.longitude;
+
+        // api , opencagedata
+        const api_key = "0d8abfd63db843cfa97acf1ae7c249f4";
+        const url = `
+        https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${api_key}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const country = data.results[0].components.country;
+
+        document.querySelector("#txtSearch").value = country;
+        document.querySelector("#btnSearch").click();
+      }
+
+      function onError(err) {
+        console.log(err);
+        document.querySelector("#loading").style.display = "none";
+      }
 
       async function getCountry(country) {
         try {
@@ -81,6 +130,7 @@
       }
 
       function renderCountry(data) {
+        document.querySelector("#loading").style.display = "none";
         document.querySelector("#country-details").innerHTML = "";
         document.querySelector("#neighbors").innerHTML = "";
         let html = `
@@ -145,6 +195,7 @@
       }
 
       function renderError(err) {
+        document.querySelector("#loading").style.display = "none";
         const html = `
         <div class="alert alert-danger">${err.message}</div>
         `;
